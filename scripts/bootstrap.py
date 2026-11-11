@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from backend.app import config
 from scripts.seed import populate
+from scripts.migrate_db import apply_migrations
 
 
 async def main():
@@ -17,6 +18,7 @@ async def main():
         async with conn.transaction():
             await conn.execute("SELECT pg_advisory_xact_lock(1102026)")
             if await conn.fetchval("SELECT to_regclass('departments') IS NOT NULL"):
+                await apply_migrations(conn)
                 print('Existing clinic database retained. Use init_db.py --reset only for an intentional demo reset.')
                 return
             await conn.execute((ROOT / 'schema.sql').read_text(encoding='utf-8'))

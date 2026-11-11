@@ -123,6 +123,12 @@ CREATE TABLE Patients (
     emergency_contact_phone VARCHAR(20),
     created_at              TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
+    CONSTRAINT chk_patient_phone_digits
+        CHECK (phone ~ '^[0-9]{10}$'),
+
+    CONSTRAINT chk_patient_emergency_phone_digits
+        CHECK (emergency_contact_phone IS NULL OR emergency_contact_phone ~ '^[0-9]{10}$'),
+
     CONSTRAINT chk_patient_dob_valid 
         CHECK (date_of_birth >= '1900-01-01'),
 

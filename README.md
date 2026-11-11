@@ -38,6 +38,8 @@ PostgreSQL 16: 10 tables, constraints, indexes, triggers,
 
 The clinic uses **Asia/Kolkata time** and **INR**. Admin/Receptionist and Doctor are the application roles; patients do not have login accounts. All bundled patient and clinical entries are synthetic demonstration data.
 
+Patient phone numbers contain exactly **10 digits**, with `+91` displayed separately in the registration/edit form. Emergency contacts follow the same rule when provided. Both remain strings, including any leading zeroes; letters, separators, and embedded country codes are rejected by the API and database.
+
 ## 3. Quick Start: Docker Compose
 
 Prerequisites: Python 3.11+ (3.12 recommended), Docker Engine/Desktop with Compose, and Git. Node is only needed for the native frontend route. Run commands from the repository root.
@@ -73,6 +75,16 @@ docker compose up -d backend frontend
 ```
 
 `--reset` deletes the configured MedConnect tables and their data. Do not use it for a database whose contents should be retained. `schema.sql` is a complete rebuild script, not an incremental migration.
+
+### Updating an Existing Database
+
+After pulling an update, retain the existing records and apply additive migrations with:
+
+```powershell
+.venv/Scripts/python scripts/migrate_db.py
+```
+
+For Compose, the setup service checks migrations on restart. They can also be applied explicitly with `docker compose run --rm setup python scripts/migrate_db.py`. The 10-digit contact migration validates existing values; if an older record is invalid, correct that contact before retrying. It does not truncate numbers or reset the database. Repeated migration runs are safe.
 
 ## 4. Native Setup & Run Instructions
 

@@ -33,6 +33,8 @@ Login token lifetime is four hours. Doctor IDs come from signed subjects, never 
 
 Dates use `YYYY-MM-DD`; slots use local `HH:MM` or `HH:MM:SS` in Asia/Kolkata. `/slots` supports `exclude_appointment_id` while rescheduling. An available time is advisory until booking commits. Patient lists are bounded by limit (1-250); appointment lists return at most 250 rows, with date/status filters.
 
+Patient creation and editing require `phone` to be a string containing exactly ten ASCII digits (`0-9`). The form displays `+91` separately; do not include it in the stored value. `emergency_contact_phone` is optional (`null`, omitted, or blank); a nonblank value must also contain ten digits. Surrounding whitespace is trimmed, leading zeroes are retained, and letters, internal spaces, punctuation, Unicode digit substitutes, and other lengths return 422.
+
 ## 3. Clinical Encounter, Pharmacy & Billing
 
 | Method | Route | Access | Purpose |

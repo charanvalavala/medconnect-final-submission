@@ -37,6 +37,7 @@
 - [x] Implement doctor consultation, medical history, prescriptions, and atomic completion.
 - [x] Implement invoice retrieval, payment, and analytics.
 - [x] Return useful validation, conflict, missing-record, and authorization responses.
+- [x] Require ten-digit patient phones and optional emergency contacts in the form, API, and database; provide a repeatable upgrade for existing records.
 - [x] Verify that doctor access is limited to their own appointments and relevant patient records.
 
 ## 4. Frontend Integration

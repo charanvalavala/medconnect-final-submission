@@ -58,6 +58,10 @@ React 18, Vite, Tailwind, TanStack Query, and Lucide implement the proposed staf
 
 The final design report is authored in LaTeX and compiled in a separate Overleaf project. It retains the blue headings and academic structure of the mid-sem report, with corrected participation, keys, normalization, and implementation details. The final report is capped at five pages; detailed reproducibility and viva material remain in repository Markdown. The five named members retain their original roles, with final module responsibilities listed in README and the checklist.
 
+### Decision 13: Patient Contact Format
+
+Registration and profile editing use ten-digit Indian national contact numbers. The form shows `+91` separately and requests a numeric keypad, while native pattern validation, the API, and database CHECK constraints reject other formats. The emergency contact is optional but follows the same rule when provided. Contact values remain strings so leading zeroes are preserved; the rule does not require a mobile-only first digit. Existing databases receive an additive, repeatable migration. Invalid legacy values cause the migration to fail atomically for correction, rather than being truncated or discarded.
+
 ## 3. Boundaries
 
 No patient accounts, provider onboarding/password reset UI, clinical amendment workflow, refunds, payment gateway, split payments, batch-level pharmacy traceability, multi-clinic scheduling, or production deployment is included. Staff authentication is implemented for the local demonstration, without online abuse controls or credential recovery. List views return bounded results rather than general pagination. The database owner can bypass retention by changing schema/routines; this is not a tamper-proof audit system.

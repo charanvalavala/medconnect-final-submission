@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 Text = Annotated[str, Field(min_length=1, max_length=100)]
 PositiveId = Annotated[int, Field(gt=0)]
 Money = Annotated[Decimal, Field(ge=0, max_digits=10, decimal_places=2)]
+PhoneNumber = Annotated[str, Field(min_length=10, max_length=10, pattern=r'^[0-9]{10}$')]
 
 
 class FormModel(BaseModel):
@@ -24,10 +25,15 @@ class Patient(FormModel):
     date_of_birth: date
     gender: Literal['Male', 'Female', 'Other']
     blood_group: Literal['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] | None = None
-    phone: str = Field(min_length=7, max_length=20)
+    phone: PhoneNumber
     email: str | None = Field(default=None, max_length=100)
     address: str = Field(min_length=1, max_length=1000)
-    emergency_contact_phone: str | None = Field(default=None, max_length=20)
+    emergency_contact_phone: PhoneNumber | None = None
+
+    @field_validator('emergency_contact_phone', mode='before')
+    @classmethod
+    def optional_emergency_contact(cls, value):
+        return None if isinstance(value, str) and not value.strip() else value
 
     @field_validator('date_of_birth')
     @classmethod

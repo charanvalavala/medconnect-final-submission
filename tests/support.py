@@ -41,7 +41,7 @@ class PostgreSQLCase(unittest.TestCase):
             self.conn.execute('''
                 INSERT INTO Patients (first_name,last_name,date_of_birth,gender,phone,address)
                 VALUES ('Patient',%s,'1990-01-01','Other',%s,'Demonstration Street')
-            ''', (str(index), f'900000000{index:02d}'))
+            ''', (str(index), f'90000000{index:02d}'))
         for name, price in [('Medicine A', '12.50'), ('Medicine B', '7.25')]:
             self.conn.execute('''
                 INSERT INTO Medicines (name,category,manufacturer,unit_price,stock_quantity,expiry_date)

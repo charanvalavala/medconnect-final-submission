@@ -20,10 +20,10 @@
 ## 2. PostgreSQL & HTTP Tests
 
 ```text
-TEST_DATABASE_URL=postgresql://medconnect:medconnect@127.0.0.1:55432/medconnect
+TEST_DATABASE_URL=postgresql://medconnect:medconnect@127.0.0.1:55432/medconnect_phone_tests
 .venv/Scripts/python -m pytest -q
 
-44 passed, 1 warning, 21 subtests passed
+51 passed, 1 warning, 53 subtests passed
 ```
 
 The local validation instance uses a dedicated loopback PostgreSQL 16.11 server on port 55432. This is a real PostgreSQL process, not a SQLite translation. README defaults to the normal PostgreSQL port 5432 for fresh installations. Each test creates and removes an isolated random schema; test statements do not reset the demonstrated public schema.
@@ -66,7 +66,7 @@ Fresh relation counts:
 |---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | 6 | 15 | 105 | 180 | 300 | 168 | 168 | 30 | 168 | 168 |
 
-The catalog reports **14 foreign keys, 26 CHECK constraints, and 11 user triggers**. The five report result counts for the fresh seed were **6, 15, 3, 2, and 28**, respectively. Browser demonstration writes add records beyond these fresh-seed totals.
+The catalog reports **14 foreign keys, 28 CHECK constraints, and 11 user triggers**. The five report result counts for the fresh seed were **6, 15, 3, 2, and 28**, respectively. Browser demonstration writes add records beyond these fresh-seed totals.
 
 ## 4. Browser & Frontend Verification
 
@@ -111,3 +111,13 @@ Normalization wording was corrected to distinguish nullable unique links and the
 The separate public repository is [charanvalavala/medconnect-final-submission](https://github.com/charanvalavala/medconnect-final-submission). Implementation commit 62c2af5e40df6788975af0d7116f68e3ace1bfc3 passed [GitHub CI](https://github.com/charanvalavala/medconnect-final-submission/actions/runs/43011264085): PostgreSQL 16 / Python 3.12 database-and-API verification, fresh bootstrap/restart/report execution, and the Node 22 frontend clean install/build.
 
 The original team repository was read again after publication: its main remains at mid-sem commit 3e10a8ea6de8b7073798a89d7d5e22abdeb404f1. The final copy retains that history without changing the original remote.
+
+## 8. Patient Contact Validation Update
+
+Patient registration and profile editing now require ten ASCII digits, with `+91` displayed separately. The emergency number is optional; provided values follow the same rule. Values remain strings and preserve leading zeroes. The form uses numeric input hints and native validation; the API and PostgreSQL enforce the format independently.
+
+The complete suite passes **51 tests and 53 subtests**, including invalid lengths, letters, separators, country-code input, Unicode digit substitutes, creation/editing, surrounding-whitespace handling, optional emergency contacts, leading zeroes, and direct SQL validation. A UTF-8 test database ensures Unicode cases reach the database constraints rather than being blocked by the older Windows demo database encoding.
+
+The additive migration was applied twice to the existing demonstration database: **181 patient records and 169 invoices were retained unchanged**. Tests also verify repeatable upgrades and atomic failure on invalid legacy contacts, without partial constraints or silent rewriting. Existing Compose installations receive the migration through bootstrap; native installations can run `scripts/migrate_db.py` without resetting their data.
+
+The updated form was checked in Edge: both controls show a separate `+91` prefix, invalid letters and short numbers fail native validation, a ten-digit string with a leading zero remains valid, and an empty emergency contact remains valid. See [registration preview](screenshots/patient-phone-validation.jpg). The production frontend build also passes.

@@ -10,7 +10,7 @@ from backend.app.main import app
 from tests.support import PASSWORD_HASH, PostgreSQLCase
 
 
-class TestApplicationWorkflows(PostgreSQLCase):
+class ApplicationCase(PostgreSQLCase):
     def setUp(self):
         super().setUp()
         config.DATABASE_URL = self.dsn
@@ -47,6 +47,8 @@ class TestApplicationWorkflows(PostgreSQLCase):
                 'instructions': 'Demonstration', 'items': items if items is not None else [
                     {'medicine_id': 1, 'dosage': 'Test dosage', 'duration_days': 3, 'quantity': 4}]}
 
+
+class TestApplicationWorkflows(ApplicationCase):
     def test_health_and_authentication_boundaries(self):
         self.assertEqual(self.client.get('/api/health').json()['status'], 'ok')
         self.assertEqual(self.client.get('/api/patients').status_code, 401)

@@ -138,6 +138,8 @@ Uniqueness of doctor and patient contact fields is enforced **within each relati
 
 Identifiers and counts use integers; monetary values use exact `NUMERIC(10,2)`; dates use `DATE`; slot/shift times use local `TIME`; event timestamps use `TIMESTAMPTZ`; bounded strings cover names/status/contact fields and `TEXT` covers notes. `schema.sql` defines defaults, nullability, string limits, and allowed values. Birth dates have a static 1900 lower bound in the database and a no-future check in the API.
 
+Patient phone and non-null emergency-contact values must match `^[0-9]{10}$`. They remain string columns to preserve leading zeroes. The interface shows the Indian `+91` prefix separately; it is not stored in either column. CHECK constraints and request validation enforce the same national-number rule without a mobile-only first-digit restriction. `database/migrations/001_patient_phone_numbers.sql` adds these constraints to existing installations without rewriting records.
+
 ### Referential Actions & Retention
 
 There are 14 foreign keys. Parent deletes use RESTRICT except schedule-to-doctor and item-to-prescription CASCADE, and nullable record-to-appointment SET NULL. All FKs use ON UPDATE CASCADE. Final retention triggers additionally reject deletion of schedules, appointments, records, prescriptions, dispenses, and invoices, and reject updates to clinical records/prescriptions/dispenses. Thus the inherited cascade actions are not a supported route to remove clinical history. Patient deletion is appropriate only before any linked history exists.
