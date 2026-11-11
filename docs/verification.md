@@ -15,7 +15,7 @@
 | Final design PDF at most five pages | Verified | `output/pdf/MedConnect_Final_Submission.pdf`: exactly five pages, compiled in Overleaf and visually inspected |
 | Names, IDs, responsibilities, setup, workflows | Present | README, checklist, report, and demo guide |
 | Reproduction from schema and sample data | Verified natively | Fresh database bootstrap; restart retains data; explicit reset and seed recreate 1,308 rows |
-| Separate final repository | Prepared for publication | `https://github.com/charanvalavala/medconnect-final-submission`; original mid-sem history retained |
+| Separate final repository | Verified published | `https://github.com/charanvalavala/medconnect-final-submission`; original mid-sem history retained |
 
 ## 2. PostgreSQL & HTTP Tests
 
@@ -81,7 +81,6 @@ The live browser used the running PostgreSQL-backed API. Observed operations:
 
 Representative captures:
 
-- [Desktop overview](screenshots/dashboard.jpg)
 - [Clinical encounter](screenshots/clinical-encounter.jpg)
 - [Recording the payment](screenshots/billing-payment.jpg)
 - [SQL reports](screenshots/reports.jpg)
@@ -102,7 +101,13 @@ Normalization wording was corrected to distinguish nullable unique links and the
 ## 6. Verification Limits & Remaining Team Steps
 
 - Native PostgreSQL and API execution were verified. Docker/Compose files are supplied, but a Docker engine was not available on the validation host, so container execution was not verified here.
-- The local runtime is Python 3.14; the documented Python 3.12 route is exercised by the included GitHub workflow once published. Frontend dependencies are locked with npm and the production build is checked locally.
-- Hosted CI/publication status is separate from the local results above. The final publication record should identify the published revision and its workflow result.
+- The local runtime is Python 3.14; the documented Python 3.12 route also passed in the published GitHub workflow. Frontend dependencies are locked with npm and the production build is checked locally.
+- Hosted CI passed for the implementation revision; the publication record below links the observed run.
 - This is selected correctness/concurrency coverage, not a production load, penetration, or exhaustive state-space assessment. Authentication recovery, request throttling, a separate database least-privilege role, amendments/refunds, and immutable audit-event storage are outside scope.
 - The team must review its assigned responsibilities, rehearse individual explanations, submit the repository URL through the course channel, and demonstrate the same published version. Those actions are not represented by a passing local test run.
+
+## 7. Publication Record
+
+The separate public repository is [charanvalavala/medconnect-final-submission](https://github.com/charanvalavala/medconnect-final-submission). Implementation commit 62c2af5e40df6788975af0d7116f68e3ace1bfc3 passed [GitHub CI](https://github.com/charanvalavala/medconnect-final-submission/actions/runs/43011264085): PostgreSQL 16 / Python 3.12 database-and-API verification, fresh bootstrap/restart/report execution, and the Node 22 frontend clean install/build.
+
+The original team repository was read again after publication: its main remains at mid-sem commit 3e10a8ea6de8b7073798a89d7d5e22abdeb404f1. The final copy retains that history without changing the original remote.

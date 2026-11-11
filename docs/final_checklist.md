@@ -90,7 +90,7 @@ The table assigns module responsibilities. Each member must run and understand t
 ## 8. Submission & Demonstration
 
 - [ ] Confirm the team has reviewed its responsibility table and can explain all ten relations.
-- [ ] Publish the reviewed final version to the team repository and verify its remote contents.
+- [x] Publish the reviewed final version to the team repository and verify its remote contents.
 - [ ] Submit the GitHub repository link through the course submission channel before 15 November.
 - [ ] Use the same final version and sample data for the in-lab demonstration.
 
