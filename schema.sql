@@ -2,16 +2,20 @@
 -- MedConnect: Clinic Appointment Management System
 -- Database Schema Definition (PostgreSQL 15 / 16 DDL)
 -- Document: schema.sql
--- Milestone: Mid-Sem Deliverable Companion
+-- Milestone: Final Project Submission
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
--- 0. CLEAN TEARDOWN (For idempotent script execution)
+-- 0. CLEAN TEARDOWN (Run only in a disposable/demo database)
 -- ----------------------------------------------------------------------------
 DROP VIEW IF EXISTS v_daily_department_revenue CASCADE;
 DROP PROCEDURE IF EXISTS sp_generate_invoice(INT) CASCADE;
-DROP TRIGGER IF EXISTS trg_deduct_medicine_stock ON Prescription_Items CASCADE;
 DROP FUNCTION IF EXISTS fn_trg_deduct_medicine_stock() CASCADE;
+DROP FUNCTION IF EXISTS fn_validate_appointment() CASCADE;
+DROP FUNCTION IF EXISTS fn_validate_schedule() CASCADE;
+DROP FUNCTION IF EXISTS fn_validate_clinical_link() CASCADE;
+DROP FUNCTION IF EXISTS fn_protect_invoice() CASCADE;
+DROP FUNCTION IF EXISTS fn_reject_change() CASCADE;
 
 DROP TABLE IF EXISTS Invoices CASCADE;
 DROP TABLE IF EXISTS Prescription_Items CASCADE;
@@ -53,6 +57,7 @@ CREATE TABLE Doctors (
     qualification    VARCHAR(100) NOT NULL,
     consultation_fee NUMERIC(10, 2) NOT NULL,
     status           VARCHAR(20) NOT NULL DEFAULT 'Active',
+    password_hash    TEXT,
     created_at       TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_doctor_department 
@@ -140,6 +145,7 @@ CREATE TABLE Appointments (
     doctor_id        INT NOT NULL,
     appointment_date DATE NOT NULL,
     appointment_time TIME NOT NULL,
+    duration_minutes INT NOT NULL DEFAULT 30 CHECK (duration_minutes IN (15, 20, 30, 45, 60)),
     status           VARCHAR(20) NOT NULL DEFAULT 'Scheduled',
     reason_for_visit VARCHAR(255),
     created_at       TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -268,6 +274,7 @@ CREATE TABLE Prescription_Items (
     dosage           VARCHAR(50) NOT NULL,
     duration_days    INT NOT NULL,
     quantity         INT NOT NULL,
+    unit_price       NUMERIC(10, 2) NOT NULL CHECK (unit_price >= 0.00),
 
     CONSTRAINT fk_item_prescription 
         FOREIGN KEY (prescription_id) 
@@ -340,13 +347,12 @@ CREATE TABLE Invoices (
 -- ----------------------------------------------------------------------------
 -- 11. PERFORMANCE & QUERY TUNING INDEXES
 -- ----------------------------------------------------------------------------
--- Foreign Key Indexes (Eliminate full table sequential scans during JOINs)
+-- Indexes supporting the booking, history, inventory, and reporting queries.
 CREATE INDEX idx_doctors_dept_id ON Doctors(dept_id);
 CREATE INDEX idx_doctors_status ON Doctors(status);
 CREATE INDEX idx_schedules_doctor_day ON Doctor_Schedules(doctor_id, day_of_week) WHERE is_active = TRUE;
 
 CREATE INDEX idx_patients_last_name ON Patients(last_name, first_name);
-CREATE INDEX idx_patients_phone ON Patients(phone);
 
 CREATE INDEX idx_appt_patient_id ON Appointments(patient_id);
 CREATE INDEX idx_appt_doctor_date ON Appointments(doctor_id, appointment_date, status);
@@ -354,7 +360,6 @@ CREATE INDEX idx_appt_doctor_date ON Appointments(doctor_id, appointment_date, s
 CREATE INDEX idx_medrec_patient_id ON Medical_Records(patient_id, recorded_at DESC);
 CREATE INDEX idx_presc_patient_id ON Prescriptions(patient_id);
 
-CREATE INDEX idx_items_prescription_id ON Prescription_Items(prescription_id);
 CREATE INDEX idx_items_medicine_id ON Prescription_Items(medicine_id);
 
 CREATE INDEX idx_med_stock_reorder ON Medicines(stock_quantity, reorder_level);
@@ -371,22 +376,40 @@ RETURNS TRIGGER AS $$
 DECLARE
     v_current_stock INT;
     v_med_name VARCHAR(100);
+    v_unit_price NUMERIC(10, 2);
+    v_expiry_date DATE;
+    v_status VARCHAR(20);
 BEGIN
+    -- Serialize dispensing with encounter completion on the parent appointment.
+    SELECT a.status INTO v_status
+    FROM Appointments a JOIN Prescriptions p USING (appointment_id)
+    WHERE p.prescription_id = NEW.prescription_id
+    FOR UPDATE OF a;
+    IF NOT FOUND OR v_status != 'In_Consultation' THEN
+        RAISE EXCEPTION 'Medicines can only be dispensed during an open consultation.' USING ERRCODE = '23514';
+    END IF;
+
     -- Acquire exclusive row-level lock on the medicine to serialize concurrent updates
-    SELECT stock_quantity, name INTO v_current_stock, v_med_name
+    SELECT stock_quantity, name, unit_price, expiry_date
+    INTO v_current_stock, v_med_name, v_unit_price, v_expiry_date
     FROM Medicines
     WHERE medicine_id = NEW.medicine_id
     FOR UPDATE;
 
     IF NOT FOUND THEN
-        RAISE EXCEPTION 'Medicine ID % does not exist in pharmacy inventory.', NEW.medicine_id;
+        RAISE EXCEPTION 'Medicine ID % does not exist in pharmacy inventory.', NEW.medicine_id USING ERRCODE = '23503';
     END IF;
 
     -- Validate inventory sufficiency
     IF v_current_stock < NEW.quantity THEN
         RAISE EXCEPTION 'Insufficient inventory for "%" (ID %): requested %, but only % available in stock.', 
-            v_med_name, NEW.medicine_id, NEW.quantity, v_current_stock;
+            v_med_name, NEW.medicine_id, NEW.quantity, v_current_stock USING ERRCODE = '23514';
     END IF;
+
+    IF v_expiry_date < CURRENT_DATE THEN
+        RAISE EXCEPTION 'Expired medicine cannot be dispensed: %', v_med_name USING ERRCODE = '23514';
+    END IF;
+    NEW.unit_price := v_unit_price;
 
     -- Atomically decrement stock
     UPDATE Medicines
@@ -417,6 +440,11 @@ DECLARE
     v_prescription_id INT;
     v_existing_invoice INT;
 BEGIN
+    -- A single appointment lock makes concurrent calls return the same invoice.
+    PERFORM 1 FROM Appointments WHERE appointment_id = p_appointment_id FOR UPDATE;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Appointment ID % not found.', p_appointment_id USING ERRCODE = '23503';
+    END IF;
     -- Verify if invoice already exists for this appointment
     SELECT COUNT(*) INTO v_existing_invoice 
     FROM Invoices 
@@ -440,7 +468,7 @@ BEGIN
 
     -- Ensure appointment is completed prior to billing
     IF v_appt_status != 'Completed' THEN
-        RAISE EXCEPTION 'Cannot generate invoice for appointment % with status %', p_appointment_id, v_appt_status;
+        RAISE EXCEPTION 'Cannot generate invoice for appointment % with status %', p_appointment_id, v_appt_status USING ERRCODE = '23514';
     END IF;
 
     -- Calculate total charges for dispensed prescription medications
@@ -449,10 +477,9 @@ BEGIN
     WHERE appointment_id = p_appointment_id;
 
     IF v_prescription_id IS NOT NULL THEN
-        SELECT COALESCE(SUM(pi.quantity * m.unit_price), 0.00)
+        SELECT COALESCE(SUM(pi.quantity * pi.unit_price), 0.00)
         INTO v_medicine_total
         FROM Prescription_Items pi
-        JOIN Medicines m ON pi.medicine_id = m.medicine_id
         WHERE pi.prescription_id = v_prescription_id;
     END IF;
 
@@ -496,5 +523,189 @@ WHERE i.payment_status = 'Paid'
 GROUP BY d.dept_id, d.dept_name, DATE(i.issued_at);
 
 -- ============================================================================
+-- 15. SCHEDULE, ENCOUNTER, AND FINANCIAL INTEGRITY
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION fn_validate_schedule()
+RETURNS TRIGGER AS $$
+BEGIN
+    PERFORM 1 FROM Doctors WHERE doctor_id = NEW.doctor_id FOR UPDATE;
+    IF NEW.is_active AND EXISTS (
+        SELECT 1 FROM Doctor_Schedules s
+        WHERE s.doctor_id = NEW.doctor_id AND s.day_of_week = NEW.day_of_week
+          AND s.is_active AND s.schedule_id != NEW.schedule_id
+          AND NEW.start_time < s.end_time AND NEW.end_time > s.start_time
+    ) THEN
+        RAISE EXCEPTION 'Active doctor shifts must not overlap.' USING ERRCODE = '23514';
+    END IF;
+    IF TG_OP = 'UPDATE' AND NEW IS DISTINCT FROM OLD AND EXISTS (
+        SELECT 1 FROM Appointments WHERE doctor_id = OLD.doctor_id
+          AND appointment_date >= CURRENT_DATE AND status IN ('Scheduled', 'In_Consultation')
+    ) THEN
+        RAISE EXCEPTION 'Resolve upcoming bookings before changing a schedule.' USING ERRCODE = '23514';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_validate_schedule BEFORE INSERT OR UPDATE ON Doctor_Schedules
+FOR EACH ROW EXECUTE FUNCTION fn_validate_schedule();
+
+CREATE OR REPLACE FUNCTION fn_validate_appointment()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_duration INT;
+    v_doctor_status VARCHAR(20);
+BEGIN
+    -- All bookings for a provider serialize on the same row, including raw SQL.
+    SELECT status INTO v_doctor_status FROM Doctors WHERE doctor_id = NEW.doctor_id FOR UPDATE;
+    IF TG_OP = 'UPDATE' THEN
+        IF (NEW.patient_id, NEW.doctor_id) IS DISTINCT FROM (OLD.patient_id, OLD.doctor_id) THEN
+            RAISE EXCEPTION 'Appointment patient and doctor cannot be reassigned.' USING ERRCODE = '23514';
+        END IF;
+        IF NEW.status != OLD.status AND NOT (
+            (OLD.status = 'Scheduled' AND NEW.status IN ('In_Consultation', 'Cancelled', 'No_Show')) OR
+            (OLD.status = 'In_Consultation' AND NEW.status = 'Completed')
+        ) THEN
+            RAISE EXCEPTION 'Invalid appointment status transition.' USING ERRCODE = '23514';
+        END IF;
+        IF OLD.status != 'Scheduled' AND
+           (NEW.appointment_date, NEW.appointment_time, NEW.duration_minutes, NEW.reason_for_visit)
+           IS DISTINCT FROM (OLD.appointment_date, OLD.appointment_time, OLD.duration_minutes, OLD.reason_for_visit) THEN
+            RAISE EXCEPTION 'Only scheduled appointments may be rescheduled or edited.' USING ERRCODE = '23514';
+        END IF;
+        IF (NEW.appointment_date, NEW.appointment_time) IS NOT DISTINCT FROM
+           (OLD.appointment_date, OLD.appointment_time) THEN
+            IF NEW.duration_minutes != OLD.duration_minutes THEN
+                RAISE EXCEPTION 'Booked duration cannot be changed.' USING ERRCODE = '23514';
+            END IF;
+            IF NEW.status = 'Completed' AND NOT EXISTS (
+                SELECT 1 FROM Medical_Records WHERE appointment_id = NEW.appointment_id
+            ) THEN
+                RAISE EXCEPTION 'A clinical record is required before completion.' USING ERRCODE = '23514';
+            END IF;
+            RETURN NEW;
+        END IF;
+    ELSIF NEW.status != 'Scheduled' THEN
+        RAISE EXCEPTION 'New appointments must start as Scheduled.' USING ERRCODE = '23514';
+    END IF;
+
+    IF v_doctor_status IS DISTINCT FROM 'Active' THEN
+        RAISE EXCEPTION 'Select an active doctor.' USING ERRCODE = '23514';
+    END IF;
+    SELECT slot_duration_minutes INTO v_duration FROM Doctor_Schedules
+    WHERE doctor_id = NEW.doctor_id AND is_active
+      AND day_of_week = trim(to_char(NEW.appointment_date, 'Day'))
+      AND NEW.appointment_time >= start_time
+      AND NEW.appointment_time + slot_duration_minutes * INTERVAL '1 minute' <= end_time
+      AND mod(EXTRACT(EPOCH FROM (NEW.appointment_time - start_time))::NUMERIC,
+              slot_duration_minutes * 60) = 0;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Appointment must align with an available doctor shift.' USING ERRCODE = '23514';
+    END IF;
+    NEW.duration_minutes := v_duration;
+    IF EXISTS (
+        SELECT 1 FROM Appointments a
+        WHERE a.doctor_id = NEW.doctor_id AND a.appointment_date = NEW.appointment_date
+          AND a.status != 'Cancelled' AND a.appointment_id != NEW.appointment_id
+          AND NEW.appointment_time < a.appointment_time + a.duration_minutes * INTERVAL '1 minute'
+          AND NEW.appointment_time + NEW.duration_minutes * INTERVAL '1 minute' > a.appointment_time
+    ) THEN
+        RAISE EXCEPTION 'The selected doctor slot is already booked.' USING ERRCODE = '23505';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_validate_appointment BEFORE INSERT OR UPDATE ON Appointments
+FOR EACH ROW EXECUTE FUNCTION fn_validate_appointment();
+
+CREATE OR REPLACE FUNCTION fn_validate_clinical_link()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_appointment Appointments%ROWTYPE;
+BEGIN
+    IF NEW.appointment_id IS NULL THEN RETURN NEW; END IF;
+    SELECT * INTO v_appointment FROM Appointments
+    WHERE appointment_id = NEW.appointment_id FOR UPDATE;
+    IF NOT FOUND OR (NEW.patient_id, NEW.doctor_id) IS DISTINCT FROM
+       (v_appointment.patient_id, v_appointment.doctor_id) THEN
+        RAISE EXCEPTION 'Clinical identities must match the appointment.' USING ERRCODE = '23514';
+    END IF;
+    IF v_appointment.status != 'In_Consultation' THEN
+        RAISE EXCEPTION 'Clinical entries require an open consultation.' USING ERRCODE = '23514';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_record_identity BEFORE INSERT ON Medical_Records
+FOR EACH ROW EXECUTE FUNCTION fn_validate_clinical_link();
+CREATE TRIGGER trg_prescription_identity BEFORE INSERT ON Prescriptions
+FOR EACH ROW EXECUTE FUNCTION fn_validate_clinical_link();
+
+CREATE OR REPLACE FUNCTION fn_reject_change()
+RETURNS TRIGGER AS $$
+BEGIN
+    RAISE EXCEPTION 'Clinical and booking history must be retained; this change is not supported.' USING ERRCODE = '23514';
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_keep_appointments BEFORE DELETE ON Appointments
+FOR EACH ROW EXECUTE FUNCTION fn_reject_change();
+CREATE TRIGGER trg_keep_records BEFORE UPDATE OR DELETE ON Medical_Records
+FOR EACH ROW EXECUTE FUNCTION fn_reject_change();
+CREATE TRIGGER trg_keep_prescriptions BEFORE UPDATE OR DELETE ON Prescriptions
+FOR EACH ROW EXECUTE FUNCTION fn_reject_change();
+CREATE TRIGGER trg_keep_dispenses BEFORE UPDATE OR DELETE ON Prescription_Items
+FOR EACH ROW EXECUTE FUNCTION fn_reject_change();
+CREATE TRIGGER trg_keep_schedules BEFORE DELETE ON Doctor_Schedules
+FOR EACH ROW EXECUTE FUNCTION fn_reject_change();
+
+CREATE OR REPLACE FUNCTION fn_protect_invoice()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_patient_id INT;
+    v_status VARCHAR(20);
+    v_expected_fee NUMERIC(10, 2);
+    v_expected_medicine_total NUMERIC(10, 2);
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        RAISE EXCEPTION 'Invoices must be retained.' USING ERRCODE = '23514';
+    END IF;
+    SELECT patient_id, status INTO v_patient_id, v_status FROM Appointments
+    WHERE appointment_id = NEW.appointment_id FOR UPDATE;
+    IF v_status IS DISTINCT FROM 'Completed' OR NEW.patient_id IS DISTINCT FROM v_patient_id THEN
+        RAISE EXCEPTION 'Invoice requires a completed appointment and matching patient.' USING ERRCODE = '23514';
+    END IF;
+    IF TG_OP = 'UPDATE' THEN
+        IF (NEW.appointment_id, NEW.patient_id, NEW.consultation_fee, NEW.medicine_total, NEW.total_amount, NEW.issued_at)
+           IS DISTINCT FROM
+           (OLD.appointment_id, OLD.patient_id, OLD.consultation_fee, OLD.medicine_total, OLD.total_amount, OLD.issued_at) THEN
+            RAISE EXCEPTION 'Issued invoice amounts and identity are immutable.' USING ERRCODE = '23514';
+        END IF;
+        IF OLD.payment_status != 'Pending' OR NEW.payment_status != 'Paid' THEN
+            RAISE EXCEPTION 'Only Pending to Paid payment transitions are supported.' USING ERRCODE = '23514';
+        END IF;
+    ELSE
+        IF NEW.payment_status != 'Pending' THEN
+            RAISE EXCEPTION 'Invoices must be issued as Pending.' USING ERRCODE = '23514';
+        END IF;
+        SELECT d.consultation_fee INTO v_expected_fee FROM Doctors d
+        JOIN Appointments a USING (doctor_id) WHERE a.appointment_id = NEW.appointment_id;
+        SELECT COALESCE(SUM(pi.quantity * pi.unit_price), 0.00) INTO v_expected_medicine_total
+        FROM Prescriptions p JOIN Prescription_Items pi USING (prescription_id)
+        WHERE p.appointment_id = NEW.appointment_id;
+        IF NEW.consultation_fee != v_expected_fee OR NEW.medicine_total != v_expected_medicine_total THEN
+            RAISE EXCEPTION 'Invoice amounts must match the consultation and dispensed price snapshots.' USING ERRCODE = '23514';
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_protect_invoice BEFORE INSERT OR UPDATE OR DELETE ON Invoices
+FOR EACH ROW EXECUTE FUNCTION fn_protect_invoice();
+
 -- End of schema.sql
 -- ============================================================================

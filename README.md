@@ -1,353 +1,199 @@
 # MedConnect: Clinic Appointment Management System
 
-[![DBMS Course Project](https://img.shields.io/badge/Course-DBMS_Project-blue.svg)](https://github.com)
-[![Milestone](https://img.shields.io/badge/Milestone-Mid--Sem_Submission_Complete-success.svg)](https://github.com)
-[![Database](https://img.shields.io/badge/Database-PostgreSQL_16-336791.svg)](https://www.postgresql.org/)
-[![Backend](https://img.shields.io/badge/Backend-FastAPI_(Python_3.11+)-009688.svg)](https://fastapi.tiangolo.com/)
-[![Frontend](https://img.shields.io/badge/Frontend-React_18_+_Vite_+_Tailwind-61DAFB.svg)](https://react.dev/)
-
----
+![DBMS Course Project](https://img.shields.io/badge/Course-DBMS_Project-blue.svg)
+![Database](https://img.shields.io/badge/Database-PostgreSQL_16-336791.svg)
+![Backend](https://img.shields.io/badge/Backend-FastAPI-009688.svg)
+![Frontend](https://img.shields.io/badge/Frontend-React_18-61DAFB.svg)
 
 ## 1. Project Overview & Clinical Domain
 
-**MedConnect** is a full-stack, database-centric healthcare management system engineered for multi-specialty outpatient clinics. Modern medical clinics face chronic operational bottlenecks: double-booked provider schedules, fragmented Electronic Health Records (EHR), inventory discrepancies in clinic dispensaries, and billing errors between clinical consultations and prescribed medications.
+**MedConnect** connects reception, doctors, pharmacy, and billing for a multi-specialty outpatient clinic. The application uses ten PostgreSQL relations, raw parameterized SQL, and three integrated workflows: booking with collision prevention; clinical encounter with inventory deduction; and invoicing, payment, and reporting.
 
-MedConnect grounds clinical workflows in a mathematically rigorous relational schema on **PostgreSQL 16**. It guarantees:
-- **Zero Double-Booking:** Engine-enforced concurrency control via partial unique indexes and ACID row-level locking.
-- **Atomic Pharmacy Inventory Management:** PL/pgSQL database triggers that automatically validate stock and decrement inventory upon prescription creation.
-- **Automated Invoicing:** Stored procedures that consolidate doctor fees and prescription charges into an immutable billing record.
-- **Administrative Intelligence:** Analytical views, Common Table Expressions (CTEs), and window functions for real-time departmental revenue and utilization reporting.
+**Group-11 | P2 Section | Final submission: 15 November 2026**
 
----
+**Final repository:** https://github.com/charanvalavala/medconnect-final-submission
+
+This separate final-submission copy continues the team's [mid-sem repository](https://github.com/Rajeev-Kasyap/dbms-clinic-project), preserving its original Git history.
+
+| Member | BITS ID | Continued role & final module responsibilities |
+|---|---|---|
+| K S Rajeev Kasyap | 2023A3PS0368H | Database Architect: ER/relational diagrams, schema, keys, indexes, schedule and booking design |
+| Rithwik Sai Madadi | 2023A3PS0304H | Schema & Keys Lead: backend/database integration, patient and booking APIs, staff access, setup |
+| Peketi Sai Manoj | 2023A3PS0325H | Constraints & Normalization: clinical integrity, pharmacy trigger, invoice procedure, concurrency, normalization |
+| Y Sameeksha | 2023A3PS0367H | App Design & Architecture: React staff/doctor interface, validation, responsive layout, workflow demonstration |
+| Charan Teja Valavala | 2022A7PS0059H | Documentation & Coordination: SQL reports, sample-data/verification coordination, final report, README, viva preparation |
+
+These module responsibilities continue the submitted mid-sem roles. Each member should review and run the integrated system before the individual viva.
 
 ## 2. System Architecture & Technology Stack
 
-The application follows a clean 3-tier architecture: `Frontend ↔ Application Backend ↔ Relational Database`.
-
-```
-┌────────────────────────────────────────────────────────────────────────┐
-│                    CLIENT TIER: React 18 + Vite                        │
-│  - Tailwind CSS + Lucide Icons                                         │
-│  - Modular Portals: Patient Booking, Doctor Clinical, Admin Dashboard │
-│  - TanStack Query (React Query) for caching & optimistic UI updates    │
-└───────────────────────────────────┬────────────────────────────────────┘
-                                    │ HTTP / REST (JSON)
-                                    ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│                  APPLICATION TIER: FastAPI (Python 3.11+)              │
-│  - Asynchronous ASGI Framework (Uvicorn)                               │
-│  - Strict Pydantic v2 runtime request validation & serialization       │
-│  - Raw Parameterized SQL Execution via asyncpg connection pool         │
-│  - JWT Bearer Authentication & Role-Based Middleware (RBAC)            │
-└───────────────────────────────────┬────────────────────────────────────┘
-                                    │ Native Connection Pool (Port 5432)
-                                    ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│                   DATABASE TIER: PostgreSQL 16                         │
-│  - 10 Normalized Relations (1NF through BCNF compliant)                │
-│  - ACID Transactions with Row-Level Locking (SELECT ... FOR UPDATE)    │
-│  - Automated Triggers (Pharmacy stock deduction)                       │
-│  - Stored Procedures (Encounter invoice calculation)                   │
-│  - Analytical Views & Filtered Partial Unique Indexes                  │
-└────────────────────────────────────────────────────────────────────────┘
+```text
+React 18 + Vite + Tailwind CSS + TanStack Query + Lucide
+                  | REST / JSON, bearer token
+FastAPI + Pydantic + asyncpg connection pool
+                  | raw bound SQL, explicit transactions
+PostgreSQL 16: 10 tables, constraints, indexes, triggers,
+              invoice procedure, paid-only revenue view
 ```
 
-### Architectural Philosophy: Raw Parameterized SQL vs. Heavy ORM
-A cornerstone of this project is demonstrating authentic mastery of relational DBMS concepts. Heavy Object-Relational Mappers (such as Prisma or Hibernate) abstract SQL generation away into high-level methods (`db.appointment.findMany()`), obscuring query execution plans. 
+The clinic uses **Asia/Kolkata time** and **INR**. Admin/Receptionist and Doctor are the application roles; patients do not have login accounts. All bundled patient and clinical entries are synthetic demonstration data.
 
-MedConnect utilizes **raw parameterized SQL** via `asyncpg` / `psycopg3`:
-- **SQL Injection Immunity:** Native parameter binding (`$1, $2, ...`).
-- **Complete Control:** Direct formulation of multi-table joins, subqueries, CTEs, and window functions.
-- **Viva Defense Transparency:** Every backend query maps directly to the relational design specification.
+## 3. Quick Start: Docker Compose
 
----
+Prerequisites: Python 3.11+ (3.12 recommended), Docker Engine/Desktop with Compose, and Git. Node is only needed for the native frontend route. Run commands from the repository root.
 
-## 3. Database Schema Overview (10 Canonical Relations)
-
-The schema defines **exactly 10 normalized relations**, strictly adhering to the academic guideline requirement of 8–12 tables ($8 \le 10 \le 12$).
-
-| # | Relation (Table) | Entity Classification | Primary Key | Foreign Keys & Actions | Primary Purpose |
-|---|---|---|---|---|---|
-| 1 | **`Departments`** | Strong Entity | `dept_id` | None | Medical specialties (Cardiology, Dermatology, etc.) |
-| 2 | **`Doctors`** | Strong Entity / Provider | `doctor_id` | `dept_id` $\to$ `Departments` (`RESTRICT`) | Healthcare practitioners, credentials, fees, and statuses |
-| 3 | **`Doctor_Schedules`** | Dependent / Weak Entity | `schedule_id` | `doctor_id` $\to$ `Doctors` (`CASCADE`) | Weekly recurring shift availability windows |
-| 4 | **`Patients`** | Strong Entity / Recipient | `patient_id` | None | Registered patient demographics and medical baseline |
-| 5 | **`Appointments`** | Associative Entity | `appointment_id` | `patient_id` $\to$ `Patients` (`RESTRICT`)<br>`doctor_id` $\to$ `Doctors` (`RESTRICT`) | Scheduled consultations with partial index concurrency |
-| 6 | **`Medical_Records`** | Dependent 1:1 Entity | `record_id` | `appointment_id` $\to$ `Appointments` (`SET NULL`, nullable)<br>`patient_id`, `doctor_id` (`RESTRICT`) | Clinical EHR documentation (symptoms, diagnosis, notes) |
-| 7 | **`Prescriptions`** | Header 1:1 Entity | `prescription_id` | `appointment_id` $\to$ `Appointments` (`RESTRICT`)<br>`patient_id`, `doctor_id` (`RESTRICT`) | Medical orders issued during clinical consultation |
-| 8 | **`Medicines`** | Strong Entity / Catalog | `medicine_id` | None | Pharmacy drug catalog, pricing, and stock inventory |
-| 9 | **`Prescription_Items`** | Associative Bridge ($M:N$) | `item_id` | `prescription_id` $\to$ `Prescriptions` (`CASCADE`)<br>`medicine_id` $\to$ `Medicines` (`RESTRICT`) | Prescribed drug line items, dosages, and quantities |
-| 10 | **`Invoices`** | Financial 1:1 Entity | `invoice_id` | `appointment_id` $\to$ `Appointments` (`RESTRICT`)<br>`patient_id` $\to$ `Patients` (`RESTRICT`) | Consolidated billing (consultation fees + pharmacy charges) |
-
-### Conceptual ER Diagram
-
-```mermaid
-erDiagram
-    DEPARTMENTS ||--o{ DOCTORS : "employs (1:N)"
-    DOCTORS ||--o{ DOCTOR_SCHEDULES : "maintains (1:N)"
-    PATIENTS ||--o{ APPOINTMENTS : "books (1:N)"
-    DOCTORS ||--o{ APPOINTMENTS : "attends (1:N)"
-    APPOINTMENTS ||--o| MEDICAL_RECORDS : "generates (1:1)"
-    APPOINTMENTS ||--o| PRESCRIPTIONS : "issues (1:1)"
-    PRESCRIPTIONS ||--|{ PRESCRIPTION_ITEMS : "contains (1:N)"
-    MEDICINES ||--o{ PRESCRIPTION_ITEMS : "dispensed_via (1:N)"
-    APPOINTMENTS ||--o| INVOICES : "billed_as (1:1)"
-
-    DEPARTMENTS {
-        int dept_id PK
-        string dept_name UK
-        string location
-    }
-    DOCTORS {
-        int doctor_id PK
-        int dept_id FK
-        string name
-        string email UK
-        numeric consultation_fee
-    }
-    DOCTOR_SCHEDULES {
-        int schedule_id PK
-        int doctor_id FK
-        string day_of_week
-        time start_time
-        time end_time
-    }
-    PATIENTS {
-        int patient_id PK
-        string name
-        date dob
-        string phone UK
-    }
-    APPOINTMENTS {
-        int appointment_id PK
-        int patient_id FK
-        int doctor_id FK
-        date appointment_date
-        time appointment_time
-        string status
-    }
-    MEDICAL_RECORDS {
-        int record_id PK
-        int appointment_id FK
-        text diagnosis
-    }
-    PRESCRIPTIONS {
-        int prescription_id PK
-        int appointment_id FK
-    }
-    MEDICINES {
-        int medicine_id PK
-        string name UK
-        numeric unit_price
-        int stock_quantity
-    }
-    PRESCRIPTION_ITEMS {
-        int item_id PK
-        int prescription_id FK
-        int medicine_id FK
-        int quantity
-    }
-    INVOICES {
-        int invoice_id PK
-        int appointment_id FK
-        numeric total_amount
-        string payment_status
-    }
+```powershell
+python -m venv .venv
+.venv/Scripts/python -m pip install -r backend/requirements.txt -c backend/requirements-lock.txt
+.venv/Scripts/python scripts/setup_env.py
+docker compose up --build -d
 ```
 
-*For complete attribute catalogs, referential integrity cascades, and domain CHECK rules, see [`docs/database_design.md`](docs/database_design.md).*
+On macOS/Linux, replace `.venv/Scripts/python` with `.venv/bin/python`.
 
----
+- Application: **http://localhost:8080**
+- API health: **http://localhost:8000/api/health**
+- Interactive API documentation: **http://localhost:8000/docs**
 
-## 4. Core Application Workflows & Advanced DBMS Features
+The setup service creates the schema and seeds **1,308 records** on a fresh database. A restart retains existing records. Configuration is generated in the ignored `.env`; the example file documents the supported settings. The Compose database credentials are for the local demonstration, with published ports bound to localhost.
 
-### Workflow 1: ACID Appointment Booking with Concurrency Control
-- **DBMS Feature:** Explicit Transaction Isolation (`READ COMMITTED`), Row-Level Locking (`SELECT ... FOR UPDATE`), and PostgreSQL Partial Unique Index:
-  ```sql
-  CREATE UNIQUE INDEX uq_doctor_slot_active 
-  ON Appointments (doctor_id, appointment_date, appointment_time) 
-  WHERE status NOT IN ('Cancelled');
-  ```
-- **Operational Guarantee:** If two concurrent requests attempt to book the identical slot, the second transaction is rejected by the database engine with unique constraint violation `23505`. The backend translates this into a clean HTTP 409 Conflict error. When an appointment is cancelled, the slot is immediately released for rebooking without deleting audit records.
-
-### Workflow 2: Clinical Consultation & Trigger-Based Pharmacy Inventory Deduction
-- **DBMS Feature:** PL/pgSQL Trigger (`BEFORE INSERT ON Prescription_Items`).
-- **Operational Guarantee:** Intercepts prescription items, acquires row-level locks on `Medicines`, verifies sufficient inventory (`stock_quantity >= NEW.quantity`), and atomically decrements stock. If inventory is insufficient, the trigger raises an exception, aborting the entire prescription transaction.
-
-### Workflow 3: Automated Invoicing & Administrative Analytics View
-- **DBMS Feature:** Stored Procedure `sp_generate_invoice(p_appointment_id INT)` and Analytical View `v_daily_department_revenue`.
-- **Operational Guarantee:** When a consultation concludes, the stored procedure dynamically aggregates the doctor's consultation fee and all dispensed medication line items, inserting an immutable invoice record. Clinic administrators query real-time revenue breakdowns by department directly through the view.
-
----
-
-## 5. Architectural Decisions & Decision Log Summary
-
-All major system choices and ambiguity resolutions are comprehensively recorded in [`decision.md`](decision.md):
-- **Decision 1 (Database Engine):** Selected PostgreSQL 16 over MySQL/SQLite for native partial unique indexes, PL/pgSQL triggers, and advanced CTEs.
-- **Decision 2 (Schema Scope):** Established 10 canonical tables to satisfy the 8–12 table guideline without bloat.
-- **Decision 3 (Concurrency Control):** Combined partial unique indexes with transaction row locking for defense-in-depth collision prevention.
-- **Decision 4 (Financial Immutability):** Snapshot pricing stored in `Invoices` to prevent retroactive accounting changes when catalog prices fluctuate.
-- **Decision 5 (Automated Inventory):** PL/pgSQL trigger on `Prescription_Items` ensures zero phantom inventory.
-- **Decision 6 (Tech Stack):** FastAPI (raw parameterized SQL) + React (Vite + Tailwind CSS).
-- **Decision 7 (EHR Linkage):** Optional `appointment_id` on `Medical_Records` (with `ON DELETE SET NULL`) maintains clinical audit trails while supporting legacy records.
-- **Decision 8 (PostgreSQL Constraint Dialect Compliance):** Replaced volatile functions (`CURRENT_DATE`, `CURRENT_TIMESTAMP`) in DDL `CHECK` constraints with static valid baseline checks (`date_of_birth >= '1900-01-01'`) and FastAPI Pydantic v2 application-layer validation, complying strictly with PostgreSQL 16 Section 5.4.1.
-- **Ambiguity Resolutions:** Documented resolutions for mid-sem scope, cancellation rebooking, patient data confidentiality, dual team distributions, document pagination, and PostgreSQL volatile constraint prohibition.
-
----
-
-## 6. Team Work Distribution Plans
-
-To support individual viva evaluations (per Guidelines §4 & §8), explicit, balanced division of labor models are provided for both **4-person** and **5-person** team configurations.
-
----
-
-### 6.1 Plan A: 4-Person Team Distribution
-
-```
-┌────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                 4-PERSON TEAM ARCHITECTURE                                     │
-├────────────────────────┬───────────────────────┬───────────────────────┬───────────────────────┤
-│ Member 1 (Lead DBA)    │ Member 2 (Backend)    │ Member 3 (DBMS Spec)  │ Member 4 (Full-Stack) │
-│ - Conceptual ER/EER    │ - FastAPI Setup       │ - Concurrency Txn     │ - React UI (Vite)     │
-│ - 10-Table Schema DDL  │ - REST Endpoints      │ - Inventory Trigger   │ - Booking UI          │
-│ - Normalization & Keys │ - Seed Data Pipeline  │ - Invoicing Procedure │ - Admin Dashboard     │
-│ - Constraints & Doc    │ - DB Connection Pool  │ - 5 Complex Queries   │ - E2E Integration     │
-└────────────────────────┴───────────────────────┴───────────────────────┴───────────────────────┘
+```powershell
+docker compose logs setup backend
+docker compose stop
+docker compose start
 ```
 
-#### Detailed Member Breakdown (4-Person Team)
+For an intentional reset of the **disposable demonstration database**, stop the application services, recreate the schema, and seed again:
 
-| Team Member & Role | Mid-Sem Deliverables Owned | Post-Midsem Implementation Tasks | Individual Viva Defense Focus |
-|---|---|---|---|
-| **Member 1 (ID: XXXXX)**<br>*Lead Database Architect & DBA* | • Conceptual ER/EER diagram (Mermaid).<br>• 10-table relational schema mapping.<br>• Normalization proofs (1NF to BCNF).<br>• Integrity constraints catalog.<br>• Lead Editor: `docs/database_design.md`. | • PostgreSQL server configuration & schema migration management.<br>• Performance tuning and B-Tree index optimization.<br>• Table security and constraint verification. | • Formal normalization theory (1NF–BCNF).<br>• EER specialization/generalization hierarchies.<br>• Foreign key referential actions (`RESTRICT` vs `CASCADE`). |
-| **Member 2 (ID: XXXXX)**<br>*Backend API Engineer & Data Lead* | • High-level application architecture.<br>• Tech stack evaluation.<br>• REST API specification (OpenAPI/Swagger).<br>• Initial repository configuration. | • FastAPI backend application implementation.<br>• Connection pool management (`asyncpg`).<br>• Synthetic data generation script (`seed.py`) with 500+ valid records.<br>• CRUD API routes for Patients, Doctors, and Departments. | • Parameterized SQL query execution.<br>• API design and connection pool scaling.<br>• Foreign key integrity during bulk data generation. |
-| **Member 3 (ID: XXXXX)**<br>*Advanced DBMS Specialist* | • Workflow 1, 2, and 3 procedural flowcharts.<br>• Architectural Decision Log (`decision.md`).<br>• Procedural SQL specifications. | • Workflow 1: ACID booking transaction logic.<br>• Workflow 2: PL/pgSQL inventory trigger (`trg_deduct_medicine_stock`).<br>• Workflow 3: Invoicing stored procedure (`sp_generate_invoice`).<br>• 5 non-trivial SQL analytical queries (CTEs, window functions). | • Concurrency anomalies and isolation levels.<br>• Trigger execution lifecycle and exception handling.<br>• Window functions (`DENSE_RANK()`, `SUM() OVER ()`). |
-| **Member 4 (ID: XXXXX)**<br>*Frontend UI & Integration Lead* | • UI wireframing and user journey mapping.<br>• Repository `README.md` authoring.<br>• Presentation slide preparation. | • React + Tailwind CSS client application implementation.<br>• Patient appointment booking calendar interface.<br>• Doctor clinical portal (EHR and prescriptions).<br>• Admin revenue and department analytics dashboard.<br>• End-to-end integration testing and viva demo readiness. | • Client-side state management and API integration.<br>• UX error handling (mapping 409 Conflict).<br>• System demonstration and user journey flows. |
-
-#### RACI Matrix (4-Person Team)
-
-| Project Deliverable / Module | Member 1 (DBA) | Member 2 (Backend) | Member 3 (DBMS Spec) | Member 4 (Frontend) |
-|---|:---:|:---:|:---:|:---:|
-| ER/EER Modeling & Schema DDL (`schema.sql`) | **A / R** | C | C | I |
-| Normalization Proofs & Design Specification | **A / R** | I | C | I |
-| Architectural Decision Log (`decision.md`) | C | C | **A / R** | I |
-| FastAPI Backend Core & Connection Pool | I | **A / R** | C | C |
-| Concurrency Booking Transaction & Locks | C | C | **A / R** | I |
-| Inventory Trigger & Invoicing Procedure | C | I | **A / R** | I |
-| 500+ Record Mock Data Seeding (`seed.py`) | C | **A / R** | I | I |
-| 5 Non-Trivial SQL Analytical Queries | C | I | **A / R** | C |
-| React Frontend Client & Clinical Portals | I | C | I | **A / R** |
-| Repository `README.md` & Setup Guide | C | C | C | **A / R** |
-
-*(Legend: **A** = Accountable, **R** = Responsible, **C** = Consulted, **I** = Informed)*
-
----
-
-### 6.2 Plan B: 5-Person Team Distribution
-
-```
-┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                           5-PERSON TEAM ARCHITECTURE                                             │
-├──────────────────────┬──────────────────────┬──────────────────────┬──────────────────────┬──────────────────────┤
-│ Member 1 (DBA Lead)  │ Member 2 (API/W1)    │ Member 3 (DBMS/W2)   │ Member 4 (Frontend)  │ Member 5 (Analytics) │
-│ - ER/EER Diagram     │ - FastAPI Framework  │ - Inventory Trigger  │ - React Components   │ - Admin Dashboard UI │
-│ - 10-Table Schema    │ - Booking Txn & Lock │ - Invoicing Procedure│ - Booking Portal     │ - 5 Complex Queries  │
-│ - Constraints & DDL  │ - Auth & Slot APIs   │ - Views & Triggers   │ - Doctor Prescribing │ - 500+ Faker Pipeline│
-│ - Normalization Doc  │ - Backend Services   │ - Procedural SQL     │ - Responsive Styling │ - Testing & QA Lead  │
-└──────────────────────┴──────────────────────┴──────────────────────┴──────────────────────┴──────────────────────┤
+```powershell
+docker compose stop frontend backend
+docker compose run --rm setup python scripts/init_db.py --reset
+docker compose run --rm setup python scripts/seed.py
+docker compose up -d backend frontend
 ```
 
-#### Detailed Member Breakdown (5-Person Team)
+`--reset` deletes the configured MedConnect tables and their data. Do not use it for a database whose contents should be retained. `schema.sql` is a complete rebuild script, not an incremental migration.
 
-| Team Member & Role | Mid-Sem Deliverables Owned | Post-Midsem Implementation Tasks | Individual Viva Defense Focus |
-|---|---|---|---|
-| **Member 1 (ID: XXXXX)**<br>*Database Architect & Modeling Lead* | • Domain requirements analysis & business rules.<br>• Conceptual ER/EER diagram design (Mermaid).<br>• Relational schema mapping (10 tables).<br>• Normalization report (1NF through BCNF).<br>• Primary author of `docs/database_design.md`. | • PostgreSQL DDL maintenance & migration scripts.<br>• Table constraints, check rules, domain types.<br>• B-Tree indexing strategy & query plan auditing. | • Relational algebra and normalization theory.<br>• Lossless join decomposition proofs.<br>• Physical indexing tradeoffs. |
-| **Member 2 (ID: XXXXX)**<br>*Backend API & Booking Workflow Lead* | • High-level application architecture.<br>• Workflow 1 (Booking & Concurrency) transaction logic.<br>• FastAPI project setup and OpenAPI documentation. | • Core REST API framework and connection pooling.<br>• Patient registration and doctor availability APIs.<br>• Workflow 1 implementation: ACID booking transaction with row-level locks and 409 Conflict handling. | • Transaction isolation levels in PostgreSQL.<br>• Row-level locking (`SELECT ... FOR UPDATE`).<br>• Race-condition prevention mechanisms. |
-| **Member 3 (ID: XXXXX)**<br>*Advanced DBMS & Clinical Trigger Lead* | • Workflow 2 (Prescription & Inventory) business rules.<br>• Architectural decision logging (`decision.md`).<br>• Procedural SQL specifications. | • Workflow 2: PostgreSQL trigger for inventory deduction (`trg_deduct_medicine_stock`).<br>• Stored procedure for automated billing (`sp_generate_invoice`).<br>• Relational reporting views (`v_daily_department_revenue`). | • Trigger execution lifecycle (`BEFORE` vs `AFTER`).<br>• Exception handling in PL/pgSQL.<br>• Stored procedure parameter handling. |
-| **Member 4 (ID: XXXXX)**<br>*Frontend UI & User Experience Lead* | • UI/UX wireframes and component hierarchy.<br>• Frontend project setup (React + Vite + Tailwind).<br>• User journey mapping for Patient and Doctor. | • Patient booking portal with dynamic calendar and available slot selection.<br>• Doctor clinical portal for consultation notes, diagnosis entry, and prescription generation.<br>• Frontend client state management and API integration. | • Component modularity and responsive UI.<br>• Client-side validation matching database constraints.<br>• End-to-end user experience flow. |
-| **Member 5 (ID: XXXXX)**<br>*Analytics, Seed Data & QA Lead* | • Workflow 3 (Billing & Dashboard) query design.<br>• Test plan design and edge case cataloguing.<br>• Repository `README.md` authoring and maintenance. | • Synthetic data generation pipeline (Python `Faker`) generating 500+ records.<br>• 5 non-trivial SQL analytical queries (CTEs, window functions, JSON aggregation).<br>• Admin revenue & clinic operational dashboard.<br>• Automated test suite (`pytest`) validating transactions and constraints. | • Advanced SQL queries (CTEs, window functions).<br>• Performance testing and query optimization.<br>• Test coverage and edge-case verification. |
+## 4. Native Setup & Run Instructions
 
-#### RACI Matrix (5-Person Team)
+Install PostgreSQL 16, Python 3.11+, and Node 22 LTS. Create a database and login using a PostgreSQL administration account:
 
-| Project Deliverable / Module | Member 1 (DBA) | Member 2 (API/W1) | Member 3 (DBMS/W2) | Member 4 (Frontend) | Member 5 (Analytics/QA) |
-|---|:---:|:---:|:---:|:---:|:---:|
-| ER/EER Diagram & Relational Schema | **A / R** | C | C | I | I |
-| Database Design Document (`docs/`) | **A / R** | C | C | C | C |
-| Decision Log (`decision.md`) | C | C | **A / R** | I | C |
-| FastAPI Core & Workflow 1 (Booking) | I | **A / R** | C | C | I |
-| Workflow 2 (Triggers & Invoicing) | C | C | **A / R** | I | I |
-| React UI (Patient & Doctor Portals) | I | C | I | **A / R** | C |
-| 500+ Mock Data Seeding (`seed.py`) | C | I | I | I | **A / R** |
-| 5 Non-Trivial Analytical SQL Queries | C | I | C | I | **A / R** |
-| Admin Analytics Dashboard | I | C | C | C | **A / R** |
-| Repository `README.md` & Test Suite | C | C | C | C | **A / R** |
-
-*(Legend: **A** = Accountable, **R** = Responsible, **C** = Consulted, **I** = Informed)*
-
----
-
-## 7. Current Progress & Submission Checklist
-
-### Mid-Semester Deliverables (Target: Oct 11) — Status: Complete
-- [x] **Requirement R1 (Database & App Design):** Authored publication-grade [`docs/database_design.md`](docs/database_design.md) containing Mermaid ER/EER diagrams, 10-table relational schema, primary/foreign keys, comprehensive integrity constraints, normalization proofs (1NF–BCNF), workflows, and tech stack architecture.
-- [x] **Requirement R2 (Decision Log):** Authored authoritative [`decision.md`](decision.md) detailing architecture trade-offs, tech stack selections, concurrency strategies, financial snapshot pricing, and resolutions for 5 explicit ambiguities.
-- [x] **Requirement R3 (Work Distribution):** Fully defined distinct, viable work distribution plans, module ownership, and RACI matrices for both **4-Person** and **5-Person** team configurations.
-- [x] **Requirement R4 (Repository Documentation):** Comprehensive update to `README.md` reflecting system overview, schema summary, workflows, decision summaries, and setup instructions.
-- [x] **Companion DDL Script:** Delivered clean, syntax-verified PostgreSQL DDL script in [`schema.sql`](schema.sql) with 10 tables, partial unique index, B-tree indexes, inventory trigger, invoicing stored procedure, and revenue view.
-
-### Post-Midsem Implementation Phase (Oct 12 – Nov 15) — Roadmap
-- [ ] Implement `scripts/seed.py` generating 500+ realistic clinical records using Python `Faker`.
-- [ ] Implement FastAPI backend application executing raw parameterized SQL queries with `asyncpg`.
-- [ ] Implement React frontend application with Patient, Doctor, and Admin dashboards.
-- [ ] Execute concurrency stress tests validating slot lock behavior under race conditions.
-- [ ] Prepare live in-lab demonstration script and individual viva defense slide deck.
-
----
-
-## 8. Database Setup & Verification Guide
-
-### Prerequisites
-- PostgreSQL 15 or 16 installed locally or running in Docker.
-- (Optional for full stack) Python 3.11+, Node.js 18+.
-
-### Executing the Schema Script
-To initialize and verify the MedConnect database on PostgreSQL:
-
-```bash
-# 1. Create the database
-createdb -U postgres medconnect_db
-
-# 2. Execute the DDL companion script
-psql -U postgres -d medconnect_db -f schema.sql
+```sql
+CREATE USER medconnect WITH PASSWORD 'medconnect';
+CREATE DATABASE medconnect OWNER medconnect;
 ```
 
-The script will:
-1. Drop existing objects cleanly (`DROP ... CASCADE`).
-2. Construct all 10 tables with exact types, defaults, and domain constraints (including static valid baseline check `chk_patient_dob_valid`).
-3. Build all primary keys, foreign keys with referential actions (including nullable `Medical_Records.appointment_id` with `ON DELETE SET NULL`), and performance indexes.
-4. Build the partial unique index `uq_doctor_slot_active` on `Appointments`.
-5. Compile the PL/pgSQL trigger function `fn_trg_deduct_medicine_stock()` and bind the trigger `trg_deduct_medicine_stock`.
-6. Compile the stored procedure `sp_generate_invoice(INT)` with precondition status verification (`v_appt_status = 'Completed'`).
-7. Construct the analytical database view `v_daily_department_revenue` filtered on settled invoices (`WHERE payment_status = 'Paid'`).
+Then run:
 
----
+```powershell
+python -m venv .venv
+.venv/Scripts/python -m pip install -r backend/requirements-dev.txt -c backend/requirements-lock.txt
+.venv/Scripts/python scripts/setup_env.py
+# Adjust DATABASE_URL in .env if the database uses another host, port, or login.
+.venv/Scripts/python scripts/bootstrap.py
+.venv/Scripts/python scripts/verify_db.py
+.venv/Scripts/python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
+```
 
-## 9. Viva Defense Preparation Notes
+In a second terminal:
 
-Every team member will undergo an individual viva defense (Guidelines §4 & §8). Below are key oral examination questions and answers anchored in MedConnect's architecture:
+```powershell
+cd frontend
+npm ci
+npm run dev
+```
 
-1. **Why is your schema in BCNF?**
-   - In all 10 relations, the determinant (left-hand side) of every non-trivial functional dependency is a candidate key (superkey). 
-   - Transitive dependencies are eliminated (e.g., department attributes are stored in `Departments`, not duplicated in `Doctors` or `Appointments`).
-2. **How does MedConnect prevent doctor double-booking during concurrent requests?**
-   - We utilize a **PostgreSQL Partial Unique Index**:
-     `CREATE UNIQUE INDEX uq_doctor_slot_active ON Appointments (doctor_id, appointment_date, appointment_time) WHERE status != 'Cancelled';`
-   - In conjunction with `READ COMMITTED` transaction isolation and row locks, this mathematically prevents slot collisions at the engine level while allowing cancelled slots to be immediately rebooked without deleting data.
-3. **Why do Invoices store consultation fees and medicine totals if they exist in other tables?**
-   - This is an intentional **Financial Audit Snapshot Pattern**. Master medicine prices and doctor fees change over time. Storing historical snapshot fees preserves legal billing immutability so that updating a drug's price in the future does not retroactively alter previously paid invoices.
-4. **How does the inventory trigger protect pharmacy stocks?**
-   - `trg_deduct_medicine_stock` fires `BEFORE INSERT` on `Prescription_Items`. It acquires a row-level lock on `Medicines`, verifies `stock_quantity >= NEW.quantity`, and decrements stock. If stock is insufficient, it raises an exception, automatically rolling back the entire prescription transaction.
+Open **http://localhost:5173**. Vite proxies `/api` to the local backend. For a release build, run `npm run build`; Compose serves that build through Nginx. `vite preview` alone does not provide the backend proxy.
 
----
+### Demonstration Accounts
 
-*MedConnect is developed for the CS Database Management Systems (DBMS) Course Project.*
+| Role | Email | Password |
+|---|---|---|
+| Admin/Receptionist | `admin@medconnect.local` | `Clinic@2026` |
+| Doctor 1: Ananya Rao | `doctor1@medconnect.local` | `Doctor@2026` |
+| Doctor 2: Arjun Reddy | `doctor2@medconnect.local` | `Doctor@2026` |
+
+All 15 seeded doctors use `doctor1` through `doctor15` at `medconnect.local`. The administration hash is generated by `setup_env.py`; doctor hashes are inserted by the seed script. The token signing secret is randomly generated. Tokens expire after four hours, and inactive doctors are rejected on each authenticated request. Demo passwords should be replaced if the project is adapted for wider use.
+
+## 5. Core Application Workflows & DBMS Features
+
+### Workflow 1: Appointment Booking & Concurrency
+
+Reception registers/selects a patient, chooses an active doctor, and retrieves available shift-aligned times. PostgreSQL locks the doctor row, validates the weekday/slot, snapshots duration, checks overlap, and enforces the partial unique index `uq_doctor_slot_active`. A competing booking returns HTTP 409. Scheduled visits can be rescheduled or cancelled. Cancellation retains the row and frees its slot; No_Show and Completed continue to occupy their historical slots.
+
+### Workflow 2: Clinical Encounter & Pharmacy
+
+The assigned doctor starts the consultation, records symptoms/diagnosis, and optionally adds distinct medicine lines. The `trg_deduct_medicine_stock` trigger locks inventory, rejects expired or insufficient stock, snapshots the unit price, and deducts quantity. Completion saves records, prescription, stock changes, appointment status, and invoice in one transaction. A failure leaves the consultation open with no partial clinical or inventory changes.
+
+### Workflow 3: Billing, Payment & Analytics
+
+`sp_generate_invoice` requires a completed visit and sums dispensed price snapshots plus the consultation fee at invoice issue time. Concurrent/repeated calls issue one invoice. Reception records a Pending-to-Paid transition. Repeating the same payment method returns the existing payment; a different method conflicts. The revenue view includes paid invoices only. Reports distinguish billed, paid, and outstanding amounts.
+
+### Additional Operations
+
+Patient creation, editing, name/phone search, and deletion of unlinked entries; medicine creation, stock receipt, and catalog repricing; patient clinical history; schedule creation through the documented API; five reports with CSV export. Doctor access is limited to assigned appointments and that doctor's clinical records. The UI bounds patient, appointment, and invoice lists to 250 results; patient search and date/status filters narrow the selection.
+
+## 6. Database Schema Overview
+
+| # | Relation | Main keys / purpose |
+|---|---|---|
+| 1 | `Departments` | `dept_id`; unique department name |
+| 2 | `Doctors` | `doctor_id`; department FK; email/phone unique within doctors |
+| 3 | `Doctor_Schedules` | `schedule_id`; doctor FK; weekly shifts and slot length |
+| 4 | `Patients` | `patient_id`; phone and non-null email unique within patients |
+| 5 | `Appointments` | `appointment_id`; patient/doctor FKs; duration and lifecycle |
+| 6 | `Medical_Records` | `record_id`; nullable unique appointment; patient/doctor provenance |
+| 7 | `Prescriptions` | `prescription_id`; unique appointment; patient/doctor provenance |
+| 8 | `Medicines` | `medicine_id`; unique name; catalog price, expiry, and stock |
+| 9 | `Prescription_Items` | `item_id`; unique prescription/medicine pair; dispensed price snapshot |
+| 10 | `Invoices` | `invoice_id`; unique appointment; frozen charges and payment state |
+
+See [database design](docs/database_design.md), [decision log](decision.md), and the [final design report](output/pdf/MedConnect_Final_Submission.pdf). The final report is authored and compiled in [Overleaf](https://www.overleaf.com/project/6af4478a23cb8e68c83a8fed); its editable source is in [docs/overleaf](docs/overleaf/main.tex). The earlier PDF and diagrams remain mid-sem artifacts; use the final design for the demonstration.
+
+### Five Non-Trivial SQL Queries
+
+| Report | SQL concepts | Executable file |
+|---|---|---|
+| Department revenue | joins, grouped CTE, filtered aggregation, DENSE_RANK, SUM OVER | [01](database/queries/01_department_revenue.sql) |
+| Doctor performance | outer joins, conditional counts, grouping, guarded ratios | [02](database/queries/02_doctor_performance.sql) |
+| Pharmacy reorder | two CTEs, joins, CASE, stock velocity | [03](database/queries/03_pharmacy_reorder.sql) |
+| Patient clinical history | correlated subquery, JSON aggregation, scoped parameters | [04](database/queries/04_patient_history.sql) |
+| Peak demand and no-shows | grouped CTE, date extraction, filtered counts, RANK | [05](database/queries/05_peak_demand.sql) |
+
+## 7. Verification & Viva Preparation
+
+Tests run against **PostgreSQL**, using fresh, randomly named schemas that are removed after each test. Set `TEST_DATABASE_URL` explicitly; no SQLite fallback is used. The database login needs permission to create schemas in the test database.
+
+```powershell
+$env:TEST_DATABASE_URL='postgresql://medconnect:medconnect@localhost:5432/medconnect'
+.venv/Scripts/python -m pytest -q
+.venv/Scripts/python scripts/verify_db.py
+cd frontend
+npm ci
+npm run build
+```
+
+On macOS/Linux, use `export TEST_DATABASE_URL=...` and `.venv/bin/python`. [CI](.github/workflows/ci.yml) runs PostgreSQL 16 tests, fresh seeding/restart checks, report execution, and the frontend build. A workflow file is included; hosted results depend on publishing this version to GitHub.
+
+- [Detailed checklist](docs/final_checklist.md)
+- [Verification results and limits](docs/verification.md)
+- [Live demonstration and viva guide](docs/demo_guide.md)
+- [API route map](docs/api.md)
+- [Final Overleaf source archive](output/pdf/MedConnect_Final_Overleaf.zip)
+
+## 8. Project Layout & Scope
+
+```text
+schema.sql                 Complete PostgreSQL rebuild script
+database/queries/          Five executable reports
+backend/app/               FastAPI routes, authentication, validation, configuration
+frontend/src/              React workspace and styling
+scripts/                   Environment generation, bootstrap, reset, seeding, verification
+tests/                     PostgreSQL integrity, concurrency, and HTTP tests
+docs/                      Design, API, checklist, verification, and demo guide
+docs/overleaf/             Editable final LaTeX report
+output/pdf/                Final report and Overleaf source archive
+compose.yaml               Local database, setup, API, and frontend services
+```
+
+This is a local course demonstration. It does not implement patient self-service, amendments/refunds, partial payments, batch/lot-level inventory, audit-event storage, password recovery, production monitoring, or multi-clinic scheduling. Application permissions do not prevent the database owner from changing routines or disabling triggers. These boundaries are described in the design and viva guide.

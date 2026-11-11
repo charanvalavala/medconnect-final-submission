@@ -1,0 +1,221 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2020" height="1250" viewBox="0 0 2020 1250">
+<rect width="100%" height="100%" fill="#f8fafc"/>
+<style>text{font-family:Segoe UI,Arial,sans-serif}.title{font-size:26px;font-weight:600;fill:#1a3c6e}.small{font-size:13px;fill:#718596}.table{font-size:17px;font-weight:700;fill:white}.column{font-family:Consolas,monospace;font-size:13px;fill:#405a70}.key{fill:#087f76;font-weight:700}</style>
+<text x="40" y="45" font-family="Arial,sans-serif" font-size="26" font-weight="600" fill="#1a3c6e">MedConnect | Final Relational Schema</text>
+<text x="40" y="72" font-family="Arial,sans-serif" font-size="13" fill="#718596">10 tables · 14 foreign keys · PK = primary key · FK = foreign key · ? = nullable · source: schema.sql</text>
+<path d="M580 462 V510 H225 V312" fill="none" stroke="#89a5c5" stroke-width="1.6" opacity=".72"/>
+<path d="M970 337 V517 H615 V462" fill="none" stroke="#7eb4a8" stroke-width="1.6" opacity=".72"/>
+<path d="M611 670 V524 H1391 V437" fill="none" stroke="#b0a0ca" stroke-width="1.6" opacity=".72"/>
+<path d="M575 670 V531 H575 V462" fill="none" stroke="#c4ac89" stroke-width="1.6" opacity=".72"/>
+<path d="M190 922 V1132 H615 V947" fill="none" stroke="#89a5c5" stroke-width="1.6" opacity=".72"/>
+<path d="M221 670 V545 H1391 V437" fill="none" stroke="#7eb4a8" stroke-width="1.6" opacity=".72"/>
+<path d="M185 670 V552 H575 V462" fill="none" stroke="#b0a0ca" stroke-width="1.6" opacity=".72"/>
+<path d="M970 872 V1156 H615 V947" fill="none" stroke="#c4ac89" stroke-width="1.6" opacity=".72"/>
+<path d="M1001 670 V566 H1391 V437" fill="none" stroke="#89a5c5" stroke-width="1.6" opacity=".72"/>
+<path d="M965 670 V573 H575 V462" fill="none" stroke="#7eb4a8" stroke-width="1.6" opacity=".72"/>
+<path d="M1360 897 V1180 H1005 V872" fill="none" stroke="#b0a0ca" stroke-width="1.6" opacity=".72"/>
+<path d="M1391 670 V587 H1781 V387" fill="none" stroke="#c4ac89" stroke-width="1.6" opacity=".72"/>
+<path d="M1750 972 V1196 H615 V947" fill="none" stroke="#89a5c5" stroke-width="1.6" opacity=".72"/>
+<path d="M1763 670 V601 H1373 V437" fill="none" stroke="#7eb4a8" stroke-width="1.6" opacity=".72"/>
+<rect x="40" y="110" width="350" height="202" rx="7" fill="white" stroke="#b6c9d9"/>
+<path d="M47 110 H383 Q390 110 390 117 V150 H40 V117 Q40 110 47 110" fill="#214766"/>
+<text x="54" y="136" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="white">Departments</text>
+<text x="54" y="172" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">PK</tspan> dept_id</text>
+<text x="293" y="172" font-family="Arial,sans-serif" font-size="13" fill="#718596">SERIAL</text>
+<text x="54" y="197" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> dept_name</text>
+<text x="293" y="197" font-family="Arial,sans-serif" font-size="13" fill="#718596">VCHR(100)</text>
+<text x="54" y="222" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> description?</text>
+<text x="293" y="222" font-family="Arial,sans-serif" font-size="13" fill="#718596">TEXT</text>
+<text x="54" y="247" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> location</text>
+<text x="293" y="247" font-family="Arial,sans-serif" font-size="13" fill="#718596">VCHR(100)</text>
+<text x="54" y="272" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> contact_number?</text>
+<text x="293" y="272" font-family="Arial,sans-serif" font-size="13" fill="#718596">VCHR(20)</text>
+<text x="54" y="297" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> created_at</text>
+<text x="293" y="297" font-family="Arial,sans-serif" font-size="13" fill="#718596">TIMESTAMPTZ</text>
+<rect x="430" y="110" width="350" height="352" rx="7" fill="white" stroke="#b6c9d9"/>
+<path d="M437 110 H773 Q780 110 780 117 V150 H430 V117 Q430 110 437 110" fill="#214766"/>
+<text x="444" y="136" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="white">Doctors</text>
+<text x="444" y="172" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">PK</tspan> doctor_id</text>
+<text x="683" y="172" font-family="Arial,sans-serif" font-size="13" fill="#718596">SERIAL</text>
+<text x="444" y="197" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">FK</tspan> dept_id</text>
+<text x="683" y="197" font-family="Arial,sans-serif" font-size="13" fill="#718596">INT</text>
+<text x="444" y="222" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> first_name</text>
+<text x="683" y="222" font-family="Arial,sans-serif" font-size="13" fill="#718596">VCHR(50)</text>
+<text x="444" y="247" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> last_name</text>
+<text x="683" y="247" font-family="Arial,sans-serif" font-size="13" fill="#718596">VCHR(50)</text>
+<text x="444" y="272" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> email</text>
+<text x="683" y="272" font-family="Arial,sans-serif" font-size="13" fill="#718596">VCHR(100)</text>
+<text x="444" y="297" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> phone</text>
+<text x="683" y="297" font-family="Arial,sans-serif" font-size="13" fill="#718596">VCHR(20)</text>
+<text x="444" y="322" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> specialization</text>
+<text x="683" y="322" font-family="Arial,sans-serif" font-size="13" fill="#718596">VCHR(100)</text>
+<text x="444" y="347" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> qualification</text>
+<text x="683" y="347" font-family="Arial,sans-serif" font-size="13" fill="#718596">VCHR(100)</text>
+<text x="444" y="372" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> consultation_fee</text>
+<text x="683" y="372" font-family="Arial,sans-serif" font-size="13" fill="#718596">NUMERIC(10, 2)</text>
+<text x="444" y="397" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> status</text>
+<text x="683" y="397" font-family="Arial,sans-serif" font-size="13" fill="#718596">VCHR(20)</text>
+<text x="444" y="422" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> password_hash?</text>
+<text x="683" y="422" font-family="Arial,sans-serif" font-size="13" fill="#718596">TEXT</text>
+<text x="444" y="447" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> created_at</text>
+<text x="683" y="447" font-family="Arial,sans-serif" font-size="13" fill="#718596">TIMESTAMPTZ</text>
+<rect x="820" y="110" width="350" height="227" rx="7" fill="white" stroke="#b6c9d9"/>
+<path d="M827 110 H1163 Q1170 110 1170 117 V150 H820 V117 Q820 110 827 110" fill="#214766"/>
+<text x="834" y="136" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="white">Doctor_Schedules</text>
+<text x="834" y="172" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">PK</tspan> schedule_id</text>
+<text x="1073" y="172" font-family="Arial,sans-serif" font-size="13" fill="#718596">SERIAL</text>
+<text x="834" y="197" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">FK</tspan> doctor_id</text>
+<text x="1073" y="197" font-family="Arial,sans-serif" font-size="13" fill="#718596">INT</text>
+<text x="834" y="222" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> day_of_week</text>
+<text x="1073" y="222" font-family="Arial,sans-serif" font-size="13" fill="#718596">VCHR(10)</text>
+<text x="834" y="247" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> start_time</text>
+<text x="1073" y="247" font-family="Arial,sans-serif" font-size="13" fill="#718596">TIME</text>
+<text x="834" y="272" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> end_time</text>
+<text x="1073" y="272" font-family="Arial,sans-serif" font-size="13" fill="#718596">TIME</text>
+<text x="834" y="297" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> slot_duration_minutes</text>
+<text x="1073" y="297" font-family="Arial,sans-serif" font-size="13" fill="#718596">INT</text>
+<text x="834" y="322" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> is_active</text>
+<text x="1073" y="322" font-family="Arial,sans-serif" font-size="13" fill="#718596">BOOLEAN</text>
+<rect x="1210" y="110" width="350" height="327" rx="7" fill="white" stroke="#b6c9d9"/>
+<path d="M1217 110 H1553 Q1560 110 1560 117 V150 H1210 V117 Q1210 110 1217 110" fill="#214766"/>
+<text x="1224" y="136" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="white">Patients</text>
+<text x="1224" y="172" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">PK</tspan> patient_id</text>
+<text x="1463" y="172" font-family="Arial,sans-serif" font-size="13" fill="#718596">SERIAL</text>
+<text x="1224" y="197" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> first_name</text>
+<text x="1463" y="197" font-family="Arial,sans-serif" font-size="13" fill="#718596">VCHR(50)</text>
+<text x="1224" y="222" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> last_name</text>
+<text x="1463" y="222" font-family="Arial,sans-serif" font-size="13" fill="#718596">VCHR(50)</text>
+<text x="1224" y="247" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> date_of_birth</text>
+<text x="1463" y="247" font-family="Arial,sans-serif" font-size="13" fill="#718596">DATE</text>
+<text x="1224" y="272" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> gender</text>
+<text x="1463" y="272" font-family="Arial,sans-serif" font-size="13" fill="#718596">VCHR(10)</text>
+<text x="1224" y="297" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> blood_group?</text>
+<text x="1463" y="297" font-family="Arial,sans-serif" font-size="13" fill="#718596">VCHR(5)</text>
+<text x="1224" y="322" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> phone</text>
+<text x="1463" y="322" font-family="Arial,sans-serif" font-size="13" fill="#718596">VCHR(20)</text>
+<text x="1224" y="347" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> email?</text>
+<text x="1463" y="347" font-family="Arial,sans-serif" font-size="13" fill="#718596">VCHR(100)</text>
+<text x="1224" y="372" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> address</text>
+<text x="1463" y="372" font-family="Arial,sans-serif" font-size="13" fill="#718596">TEXT</text>
+<text x="1224" y="397" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> emergency_contact_phone?</text>
+<text x="1463" y="397" font-family="Arial,sans-serif" font-size="13" fill="#718596">VCHR(20)</text>
+<text x="1224" y="422" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> created_at</text>
+<text x="1463" y="422" font-family="Arial,sans-serif" font-size="13" fill="#718596">TIMESTAMPTZ</text>
+<rect x="1600" y="110" width="350" height="277" rx="7" fill="white" stroke="#b6c9d9"/>
+<path d="M1607 110 H1943 Q1950 110 1950 117 V150 H1600 V117 Q1600 110 1607 110" fill="#214766"/>
+<text x="1614" y="136" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="white">Medicines</text>
+<text x="1614" y="172" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">PK</tspan> medicine_id</text>
+<text x="1853" y="172" font-family="Arial,sans-serif" font-size="13" fill="#718596">SERIAL</text>
+<text x="1614" y="197" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> name</text>
+<text x="1853" y="197" font-family="Arial,sans-serif" font-size="13" fill="#718596">VCHR(100)</text>
+<text x="1614" y="222" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> category</text>
+<text x="1853" y="222" font-family="Arial,sans-serif" font-size="13" fill="#718596">VCHR(50)</text>
+<text x="1614" y="247" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> manufacturer</text>
+<text x="1853" y="247" font-family="Arial,sans-serif" font-size="13" fill="#718596">VCHR(100)</text>
+<text x="1614" y="272" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> unit_price</text>
+<text x="1853" y="272" font-family="Arial,sans-serif" font-size="13" fill="#718596">NUMERIC(10, 2)</text>
+<text x="1614" y="297" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> stock_quantity</text>
+<text x="1853" y="297" font-family="Arial,sans-serif" font-size="13" fill="#718596">INT</text>
+<text x="1614" y="322" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> reorder_level</text>
+<text x="1853" y="322" font-family="Arial,sans-serif" font-size="13" fill="#718596">INT</text>
+<text x="1614" y="347" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> expiry_date</text>
+<text x="1853" y="347" font-family="Arial,sans-serif" font-size="13" fill="#718596">DATE</text>
+<text x="1614" y="372" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> created_at</text>
+<text x="1853" y="372" font-family="Arial,sans-serif" font-size="13" fill="#718596">TIMESTAMPTZ</text>
+<rect x="40" y="670" width="350" height="252" rx="7" fill="white" stroke="#b6c9d9"/>
+<path d="M47 670 H383 Q390 670 390 677 V710 H40 V677 Q40 670 47 670" fill="#214766"/>
+<text x="54" y="696" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="white">Medical_Records</text>
+<text x="54" y="732" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">PK</tspan> record_id</text>
+<text x="293" y="732" font-family="Arial,sans-serif" font-size="13" fill="#718596">SERIAL</text>
+<text x="54" y="757" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">FK</tspan> appointment_id?</text>
+<text x="293" y="757" font-family="Arial,sans-serif" font-size="13" fill="#718596">INT</text>
+<text x="54" y="782" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">FK</tspan> patient_id</text>
+<text x="293" y="782" font-family="Arial,sans-serif" font-size="13" fill="#718596">INT</text>
+<text x="54" y="807" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">FK</tspan> doctor_id</text>
+<text x="293" y="807" font-family="Arial,sans-serif" font-size="13" fill="#718596">INT</text>
+<text x="54" y="832" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> symptoms</text>
+<text x="293" y="832" font-family="Arial,sans-serif" font-size="13" fill="#718596">TEXT</text>
+<text x="54" y="857" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> diagnosis</text>
+<text x="293" y="857" font-family="Arial,sans-serif" font-size="13" fill="#718596">TEXT</text>
+<text x="54" y="882" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> clinical_notes?</text>
+<text x="293" y="882" font-family="Arial,sans-serif" font-size="13" fill="#718596">TEXT</text>
+<text x="54" y="907" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> recorded_at</text>
+<text x="293" y="907" font-family="Arial,sans-serif" font-size="13" fill="#718596">TIMESTAMPTZ</text>
+<rect x="430" y="670" width="350" height="277" rx="7" fill="white" stroke="#b6c9d9"/>
+<path d="M437 670 H773 Q780 670 780 677 V710 H430 V677 Q430 670 437 670" fill="#214766"/>
+<text x="444" y="696" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="white">Appointments</text>
+<text x="444" y="732" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">PK</tspan> appointment_id</text>
+<text x="683" y="732" font-family="Arial,sans-serif" font-size="13" fill="#718596">SERIAL</text>
+<text x="444" y="757" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">FK</tspan> patient_id</text>
+<text x="683" y="757" font-family="Arial,sans-serif" font-size="13" fill="#718596">INT</text>
+<text x="444" y="782" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">FK</tspan> doctor_id</text>
+<text x="683" y="782" font-family="Arial,sans-serif" font-size="13" fill="#718596">INT</text>
+<text x="444" y="807" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> appointment_date</text>
+<text x="683" y="807" font-family="Arial,sans-serif" font-size="13" fill="#718596">DATE</text>
+<text x="444" y="832" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> appointment_time</text>
+<text x="683" y="832" font-family="Arial,sans-serif" font-size="13" fill="#718596">TIME</text>
+<text x="444" y="857" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> duration_minutes</text>
+<text x="683" y="857" font-family="Arial,sans-serif" font-size="13" fill="#718596">INT</text>
+<text x="444" y="882" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> status</text>
+<text x="683" y="882" font-family="Arial,sans-serif" font-size="13" fill="#718596">VCHR(20)</text>
+<text x="444" y="907" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> reason_for_visit?</text>
+<text x="683" y="907" font-family="Arial,sans-serif" font-size="13" fill="#718596">VCHR(255)</text>
+<text x="444" y="932" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> created_at</text>
+<text x="683" y="932" font-family="Arial,sans-serif" font-size="13" fill="#718596">TIMESTAMPTZ</text>
+<rect x="820" y="670" width="350" height="202" rx="7" fill="white" stroke="#b6c9d9"/>
+<path d="M827 670 H1163 Q1170 670 1170 677 V710 H820 V677 Q820 670 827 670" fill="#214766"/>
+<text x="834" y="696" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="white">Prescriptions</text>
+<text x="834" y="732" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">PK</tspan> prescription_id</text>
+<text x="1073" y="732" font-family="Arial,sans-serif" font-size="13" fill="#718596">SERIAL</text>
+<text x="834" y="757" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">FK</tspan> appointment_id</text>
+<text x="1073" y="757" font-family="Arial,sans-serif" font-size="13" fill="#718596">INT</text>
+<text x="834" y="782" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">FK</tspan> patient_id</text>
+<text x="1073" y="782" font-family="Arial,sans-serif" font-size="13" fill="#718596">INT</text>
+<text x="834" y="807" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">FK</tspan> doctor_id</text>
+<text x="1073" y="807" font-family="Arial,sans-serif" font-size="13" fill="#718596">INT</text>
+<text x="834" y="832" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> instructions?</text>
+<text x="1073" y="832" font-family="Arial,sans-serif" font-size="13" fill="#718596">TEXT</text>
+<text x="834" y="857" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> issued_at</text>
+<text x="1073" y="857" font-family="Arial,sans-serif" font-size="13" fill="#718596">TIMESTAMPTZ</text>
+<rect x="1210" y="670" width="350" height="227" rx="7" fill="white" stroke="#b6c9d9"/>
+<path d="M1217 670 H1553 Q1560 670 1560 677 V710 H1210 V677 Q1210 670 1217 670" fill="#214766"/>
+<text x="1224" y="696" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="white">Prescription_Items</text>
+<text x="1224" y="732" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">PK</tspan> item_id</text>
+<text x="1463" y="732" font-family="Arial,sans-serif" font-size="13" fill="#718596">SERIAL</text>
+<text x="1224" y="757" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">FK</tspan> prescription_id</text>
+<text x="1463" y="757" font-family="Arial,sans-serif" font-size="13" fill="#718596">INT</text>
+<text x="1224" y="782" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">FK</tspan> medicine_id</text>
+<text x="1463" y="782" font-family="Arial,sans-serif" font-size="13" fill="#718596">INT</text>
+<text x="1224" y="807" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> dosage</text>
+<text x="1463" y="807" font-family="Arial,sans-serif" font-size="13" fill="#718596">VCHR(50)</text>
+<text x="1224" y="832" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> duration_days</text>
+<text x="1463" y="832" font-family="Arial,sans-serif" font-size="13" fill="#718596">INT</text>
+<text x="1224" y="857" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> quantity</text>
+<text x="1463" y="857" font-family="Arial,sans-serif" font-size="13" fill="#718596">INT</text>
+<text x="1224" y="882" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> unit_price</text>
+<text x="1463" y="882" font-family="Arial,sans-serif" font-size="13" fill="#718596">NUMERIC(10, 2)</text>
+<rect x="1600" y="670" width="350" height="302" rx="7" fill="white" stroke="#b6c9d9"/>
+<path d="M1607 670 H1943 Q1950 670 1950 677 V710 H1600 V677 Q1600 670 1607 670" fill="#214766"/>
+<text x="1614" y="696" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="white">Invoices</text>
+<text x="1614" y="732" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">PK</tspan> invoice_id</text>
+<text x="1853" y="732" font-family="Arial,sans-serif" font-size="13" fill="#718596">SERIAL</text>
+<text x="1614" y="757" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">FK</tspan> appointment_id</text>
+<text x="1853" y="757" font-family="Arial,sans-serif" font-size="13" fill="#718596">INT</text>
+<text x="1614" y="782" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">FK</tspan> patient_id</text>
+<text x="1853" y="782" font-family="Arial,sans-serif" font-size="13" fill="#718596">INT</text>
+<text x="1614" y="807" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> consultation_fee</text>
+<text x="1853" y="807" font-family="Arial,sans-serif" font-size="13" fill="#718596">NUMERIC(10, 2)</text>
+<text x="1614" y="832" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> medicine_total</text>
+<text x="1853" y="832" font-family="Arial,sans-serif" font-size="13" fill="#718596">NUMERIC(10, 2)</text>
+<text x="1614" y="857" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> total_amount</text>
+<text x="1853" y="857" font-family="Arial,sans-serif" font-size="13" fill="#718596">NUMERIC(10, 2)</text>
+<text x="1614" y="882" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> payment_status</text>
+<text x="1853" y="882" font-family="Arial,sans-serif" font-size="13" fill="#718596">VCHR(20)</text>
+<text x="1614" y="907" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> payment_method?</text>
+<text x="1853" y="907" font-family="Arial,sans-serif" font-size="13" fill="#718596">VCHR(20)</text>
+<text x="1614" y="932" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> issued_at</text>
+<text x="1853" y="932" font-family="Arial,sans-serif" font-size="13" fill="#718596">TIMESTAMPTZ</text>
+<text x="1614" y="957" font-family="Courier New,monospace" font-size="13" fill="#405a70"><tspan fill="#087f76" font-weight="700">  </tspan> paid_at?</text>
+<text x="1853" y="957" font-family="Arial,sans-serif" font-size="13" fill="#718596">TIMESTAMPTZ</text>
+<text x="40" y="1230" font-family="Arial,sans-serif" font-size="13" fill="#718596">Foreign-key endpoints connect dependent tables to referenced parents. Unique constraints, participation, retention rules, and normalization decisions are detailed in docs/database_design.md.</text>
+</svg>
